@@ -12,36 +12,37 @@ logging.basicConfig(
 CHANNEL_URL = "https://t.me/your_channel_username" 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles the /start command for any user."""
+    """Handles the /start command for any user safely using HTML format."""
     user_first_name = update.effective_user.first_name
 
     welcome_text = (
-        f"⚽ **Welcome {user_first_name}!**\n\n"
-        "Welcome to **SBR24h_1bot**! Your round-the-clock booking assistant.\n\n"
-        "**What I can do:**\n"
-        "📅 **Check Availability:** Browse open date and time slots instantly.\n"
-        "⚡ **Fast Booking:** Reserve appointments, venues, or equipment in seconds.\n"
-        "🔔 **Instant Confirmation:** Get immediate booking details and reminder alerts.\n"
-        "❌ **Easy Management:** View or cancel your upcoming reservations anytime.\n\n"
+        f"⚽ <b>Welcome {user_first_name}!</b>\n\n"
+        "Welcome to <b>SBR24h_1bot</b>! Your round-the-clock booking assistant.\n\n"
+        "<b>What I can do:</b>\n\n"
+        "📅 <b>Check Availability:</b> Browse open date and time slots instantly.\n"
+        "⚡ <b>Fast Booking:</b> Reserve appointments, venues, or equipment in seconds.\n"
+        "🔔 <b>Instant Confirmation:</b> Get immediate booking details and reminder alerts.\n"
+        "❌ <b>Easy Management:</b> View or cancel your upcoming reservations anytime.\n\n"
         "Tap /start to pick a time and confirm your booking!"
     )
 
-    # Creating inline buttons (matching the format in your image)
+    # Inline buttons matching your layout
     keyboard = [
         [InlineKeyboardButton("📢 Join Channel Here", url=CHANNEL_URL)],
         [InlineKeyboardButton("✅ I Have Joined!", callback_data="check_joined")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode="Markdown")
+    # Sent using parse_mode="HTML" to prevent parse errors from underscores (_)
+    await update.message.reply_text(welcome_text, reply_markup=reply_markup, parse_mode="HTML")
 
 async def button_click_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handles button clicks (like 'I Have Joined!')."""
+    """Handles inline button clicks."""
     query = update.callback_query
     await query.answer()
 
     if query.data == "check_joined":
-        await query.message.reply_text("Thank you for verifying! Use /start anytime to start booking.")
+        await query.message.reply_text("Thank you for verifying! Use /start anytime to pick a time and confirm your booking.")
 
 async def handle_questions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Answers general questions regarding what the bot does."""
@@ -49,7 +50,7 @@ async def handle_questions(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     
     if any(q in text for q in ["who are you", "what can you do", "help", "how to book", "service"]):
         response = (
-            "I am **SBR24h_1bot**, an automated 24/7 booking assistant!\n\n"
+            "I am <b>SBR24h_1bot</b>, an automated 24/7 booking assistant!\n\n"
             "I help you check available time slots, make fast reservations for venues or equipment, "
             "send instant confirmations, and manage or cancel existing bookings seamlessly."
         )
@@ -59,23 +60,20 @@ async def handle_questions(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             "Please send /start to select an option or ask me how to book."
         )
         
-    await update.message.reply_text(response, parse_mode="Markdown")
+    await update.message.reply_text(response, parse_mode="HTML")
 
 def main() -> None:
     """Starts the background worker bot."""
-    # Retrieve Bot Token securely from Railway Environment Variables
     token = os.getenv("BOT_TOKEN")
     if not token:
         raise ValueError("No BOT_TOKEN found in environment variables!")
 
     app = Application.builder().token(token).build()
 
-    # Handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_click_handler))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_questions))
 
-    # Run polling mode (suited for Railway Background Worker)
     print("Bot is running...")
     app.run_polling()
 
